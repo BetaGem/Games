@@ -1,4 +1,4 @@
-# Copyright (c) 2021 Q.Huang rights reserved.
+# Copyright (c) 2021 Q.Huang all rights reserved.
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -9,7 +9,7 @@ steps = []   # Coordinates of each step
 end_flag = 0 # Game end flag
 board = np.zeros((MapL,MapL),dtype=np.int) # chessboard
 
-mode = 1     # modes: 0:player-player，1:PC-player，2:player-PC，3:PC-PC
+mode = 0     # modes: 0:player-player，1:PC-player，2:player-PC，3:PC-PC
 is_train = False
 
 # parameters           1  2   3   4   5   6    7    8    9   10  11   12    13    14    15    16    17    18    19    20    
@@ -225,12 +225,15 @@ def button(event):
 
 def back(event):
     '''last step'''
-    global step,steps,board
-    if event.key == 'enter':
+    global step,steps,board,end_flag
+    if event.key == 'enter' and mode < 3:
         try:
-            board[steps[step-1][0]-1][steps[step-1][1]-1] = 0
             step -= 1
-            steps.pop()
+            board[steps[step][0]-1][steps[step][1]-1] = 0
+            step -= 1
+            board[steps[step][0]-1][steps[step][1]-1] = 0
+            end_flag = 0
+            steps.pop(); steps.pop()
             show(1)
         except: print("First step!")
     
@@ -255,7 +258,7 @@ def show(is_back=0):
     
     fig = plt.figure(num=step)
     mngr = plt.get_current_fig_manager()
-    mngr.window.setGeometry(0,0,700, 700) # position of figures
+    mngr.window.setGeometry(0,30,700,700) # position of figures
     fig.canvas.mpl_connect('button_press_event', button)
     fig.canvas.mpl_connect('key_press_event', back)
     plt.grid(True,ls='--')
@@ -277,7 +280,7 @@ def show(is_back=0):
         ax.spines[edg].set_visible(False)
     if end_flag:
         if end_flag == 2: 
-            string == "Draw!"
+            string = "Draw!"
         else: 
             string = "Black Wins" if step%2 else "White Wins"
         plt.text(MapL/2+0.5,MapL/2+0.5, string,fontsize=60,c='r',alpha=0.7,
@@ -286,10 +289,11 @@ def show(is_back=0):
         
     def close():
         if is_back: 
-            plt.close(int(step+1))
+            plt.close(step+1)
+            plt.close(step+2)
         else: 
-            plt.close(int(step-1))
-            plt.close(int(step-2))
+            plt.close(step-1)
+            plt.close(step-2)
         if step: plt.close(0)
             
     if mode & (step % 2 + 1): 
