@@ -83,13 +83,17 @@ def auto(player=2,old=False):
     #                print("     ",end='')
                 else:
                     board[y][x] = player
-                    score = score_calc(coeffs[coeff],player)-cd+np.random.randint(-3,4)
+                    scores = score_calc(coeffs[coeff],player)
+                    score = scores[0] - cd + np.random.randint(0,8)
+                    score1 = scores[1]
                     board[y][x] = 3-player
-                    score2 = score_calc(coeffs[coeff],player)
+                    score2 = score_calc(coeffs[coeff],player)[0]
+                    if coeffs[coeff][0][12]*3<score1<coeffs[coeff][0][6]*0.5+coeffs[coeff][0][12]:
+                        score -= coeffs[coeff][0][6]*1.5
                     if 1.5<score2/coeffs[coeff][0][6]<2.5 or 0.5<(score2-coeffs[coeff][0][12])/coeffs[coeff][0][6]<1.5:
-                        score -= coeffs[coeff][0][6]/2
+                        score -= coeffs[coeff][0][6]*0.5
                     if 1.9<score2/coeffs[coeff][0][12]<2.1:
-                        score -= coeffs[coeff][0][6]/2
+                        score -= coeffs[coeff][0][6]*0.5
     #                print('%5d' % score,end='')
                     if max_score < score:
                         max_score = score; ymax = y+1; xmax = x+1
@@ -193,9 +197,9 @@ def score_calc(coeff,player=2):
     global numsall
     numsall = nums
     if player==2: 
-        return np.sum(nums*coeff)
+        return np.sum(nums*coeff), np.sum(nums*np.flip(coeff,axis=0))
     else:
-        return np.sum(nums*np.flip(coeff,axis=0))
+        return np.sum(nums*np.flip(coeff,axis=0)), np.sum(nums*coeff)
     
 def button(event):
     '''event handler & modes'''
@@ -217,6 +221,7 @@ def button(event):
         except: pass
     
 def move(i,j):
+    
     global step,board,end_flag
     label = [1,2]  
     try:
@@ -281,16 +286,16 @@ def show():
     else:  
         plt.ioff()
         plt.show()
-        
-                
+                     
 if __name__ == "__main__":
     result = [0,0]
     print('#'*8+"\n Gobang\n"+'#'*8+"\nDescription: please click the chessboard in the order of playing chess. After each game, close the chessboard to start a new game. Set the players (PC/player) on line 12 of the code")
     while 1:
         show()
-        if end_flag == 1:
-            if step % 2: result[0] += 1
-            else: result[1] += 1   
+        if end_flag:
+            if end_flag == 2: pass
+            elif step % 2: result[0] += 1
+            else: result[1] += 1
             end_flag = 0
             step = 0
             steps = []
