@@ -1,4 +1,3 @@
-# Copyright (c) 2021 Q.Huang all rights reserved.
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -12,11 +11,11 @@ board = np.zeros((MapL,MapL),dtype=np.int16) # chessboard
 mode = 4     # modes: 0:player-player, 1:PC-player, 2:player-PC, 3:PC-PC
 
 # parameters           1  2   3   4   5   6    7    8    9   10  11   12    13    14    15    16    17    18    19    20    
-coeffs = [np.array([[-12, 0,-35,-15,-34,-25,-1000,-60,-1000,-30,-30,-1000,-9500,-9500,-9500,-9500,-9500,-9500,-9500,-90000],
-                    [ 10, 3, 30, 15, 29, 12,  190, 70, 180,  20, 20, 4000,  140,  135,  130, 130,  200,  135,  135, 90000]]),
+coeffs = [np.array([[-12, 0,-35,-15,-34,-25,-1000,-45,-1000,-30,-30,-1000,-9500,-9500,-9500,-9500,-9500,-9500,-9500,-90000],
+                    [ 10, 3, 30, 15, 29, 12,  190, 55, 180,  20, 20, 4000,  140,  135,  130, 130,  200,  135,  135, 90000]]),
           
-          np.array([[-12, 0,-35,-15,-34,-25,-1000,-45,-1200,-30,-40,-1200,-9500,-9500,-9500,-9500,-9500,-9500,-9500,-30000],
-                    [ 10, 8, 30, 15, 29, 12,  190, 45, 190,  20, 35, 4000,  140,  135,  130, 140,  200,  138,  135, 40000]])]
+          np.array([[-12, 0,-35,-15,-34,-25,-1000,-40,-1000,-30,-30,-1000,-9500,-9500,-9500,-9500,-9500,-9500,-9500,-30000],
+                    [ 10, 3, 30, 15, 29, 12,  190, 50, 180,  20, 20, 4000,  140,  135,  130, 130,  200,  135,  135, 40000]])]
 #numsall = np.zeros((2,len(coeffs[0][0])))
 
 def judge(l,c,winn):
@@ -77,36 +76,37 @@ def auto(player=2,coeff=0):
                 cd = abs(y-MapL/2+0.5) + abs(x-MapL/2+0.5)
                 if (not step and cd>3) or (step and not np.any(board[max(y-2,0):min(y+3,MapL),max(x-2,0):min(x+3,MapL)])):
                     score = -np.inf
-                    print("     ",end='')
+                    # print("     ",end='')
                 else:
                     board[y][x] = player
                     scores = score_calc(coeffs[coeff],player)
-                    score = scores[0] - cd + np.random.randint(-5,6)    # my score in this move
+                    score = scores[0] - cd + np.random.randint(-6,5)    # my score in this move
                     score_opp = scores[1]    # the opponent's score in this move
                     board[y][x] = 3 - player
                     score2 = score_calc(coeffs[coeff],player)[0]       # my score if the opponent take this move
                     # Treatment of 33, 34 and 44
                     if coeffs[coeff][0][12]*3<score_opp<coeffs[coeff][0][6]*0.5+coeffs[coeff][0][12]:
                         score -= coeffs[coeff][0][6]
-                    if 1.5<score2/coeffs[coeff][0][6]<2.5 or 0.5<(score2-coeffs[coeff][0][12])/coeffs[coeff][0][6]<1.5:
-                        score -= coeffs[coeff][0][6]*0.5
-                    elif 1.9<score2/coeffs[coeff][0][12]<2.1:
+                    if 1.5<score2/coeffs[coeff][0][6]<2.5:
+                        score -= coeffs[coeff][0][6]*0.25
+                    elif 1.9<score2/coeffs[coeff][0][12]<2.1 or 0.5<(score2-coeffs[coeff][0][12])/coeffs[coeff][0][6]<1.5:
                         score -= coeffs[coeff][0][6]*0.5
                     elif 0.5<score2/coeffs[coeff][0][19]<3.5:
                         score -= coeffs[coeff][0][12]
-                    print('%5d' % score,end='')
+                    # print('%5d' % score,end='')
                     if max_score < score:
                         max_score = score; ymax = y+1; xmax = x+1
                     board[y][x] = 0
-            else:
-                print('  ['+'%s'%chr(21*board[y][x]+45)+']',end='')
-        print("")
+            else: pass
+                # print('  ['+'%s'%chr(21*board[y][x]+45)+']',end='')
+        # print("")
     #print("B:",end='')
     #for j in range(len(numsall[0])): print('%2d'%int(numsall[0][j]),end=' ')
     #print("\nW:",end='')
     #for j in range(len(numsall[0])): print('%2d'%int(numsall[1][j]),end=' ')
     #print("")
     return ymax,xmax
+
 
 def score_calc(coeff,player=2):
     '''calculate total score'''
@@ -200,16 +200,15 @@ def button(event):
             if mode == 0:
                 move(round(event.ydata),round(event.xdata))
             elif mode == 1:
-                if not step % 2: y,x = auto(1); move(y,x) # auto(1-B 2-W, 0-Old 1-Newï¼‰
-                else: move(round(event.ydata),round(event.xdata))    
+                if not step % 2: y,x = auto(1,1); move(y,x) # auto(1-B 2-W, 0-Old 1-Newï¼?                else: move(round(event.ydata),round(event.xdata))    
             elif mode == 2:
                 if not step % 2: move(round(event.ydata),round(event.xdata))
-                else: y,x = auto(2,1); move(y,x)   
+                else: y,x = auto(2); move(y,x)   
             elif mode == 3:
                 if not step % 2: 
-                    y,x = auto(1,1); move(y,x)
+                    y,x = auto(1); move(y,x)
                 else: 
-                    y,x = auto(2); move(y,x)
+                    y,x = auto(2,1); move(y,x)
         except: pass
     
 def move(i,j):
@@ -250,7 +249,7 @@ def show():
     plt.fill([1,MapL,MapL,1],[1,1,MapL,MapL],c='tan',alpha=0.5,zorder=0)
     plt.fill([-MapL,2*MapL,2*MapL,-MapL],[-MapL,-MapL,2*MapL,2*MapL],c='tan',alpha=0.4,zorder=1)
     plt.grid(True,ls='--',c='k',zorder=1)
-    plt.text(MapL/2,MapL+1.5,"Step:"+str(step)+"  Black:"+names[mode & 1]+"  White:"+names[(mode&2)//2],
+    plt.text(MapL/2,MapL+1.5,"Step:"+str(step)+"  Black:"+names[mode & 1]+"  "+str(result[0])+":"+str(result[1])+"  White:"+names[(mode&2)//2],
              fontsize=15,horizontalalignment="center")
     ax = plt.gca()
     ax.set_xticks(range(1,MapL+1))
@@ -277,9 +276,11 @@ def show():
                      
 if __name__ == "__main__":
     result = [0,0]
-    print('#'*8+"\n Gobang\n"+'#'*8+"\nDescription: please click the chessboard in the order of playing chess. After each game, close the chessboard to start a new game.\n")
+    print('#'*8+"\n Gobang\n"+'#'*8+"\nDescription: click the chessboard to play. After each game, close the chessboard to start a new game.\n")
     while mode not in [0,1,2,3]:
-        mode = int(input("Choose a mode (0:player-player, 1:PC-player, 2:player-PC, 3:PC-PC)\nInput:"))
+        try:
+            mode = int(input("Choose a mode (0:player-player, 1:PC-player, 2:player-PC, 3:PC-PC)\nInput:"))
+        except: pass
     print("loading ...")
     while 1:
         show()
