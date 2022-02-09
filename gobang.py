@@ -196,7 +196,8 @@ def button(event):
             if mode == 0:
                 move(round(event.ydata),round(event.xdata))
             elif mode == 1:
-                if not step % 2: y,x = auto(1,1); move(y,x) # auto(1-B 2-W, 0-Old 1-New)   
+                if not step % 2: y,x = auto(1,1); move(y,x) # auto(1-B 2-W, 0-Old 1-New)  
+                else: move(round(event.ydata),round(event.xdata))
             elif mode == 2:
                 if not step % 2: move(round(event.ydata),round(event.xdata))
                 else: y,x = auto(2); move(y,x)   
