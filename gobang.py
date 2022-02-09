@@ -16,7 +16,6 @@ coeffs = [np.array([[-12, 0,-35,-15,-34,-25,-1000,-45,-1000,-30,-30,-1000,-9500,
           
           np.array([[-12, 0,-35,-15,-34,-25,-1000,-40,-1000,-30,-30,-1000,-9500,-9500,-9500,-9500,-9500,-9500,-9500,-30000],
                     [ 10, 3, 30, 15, 29, 12,  190, 50, 180,  20, 20, 4000,  140,  135,  130, 130,  200,  135,  135, 40000]])]
-#numsall = np.zeros((2,len(coeffs[0][0])))
 
 def judge(l,c,winn):
     '''judge if a player wins by taking a move (l,c)'''
@@ -107,7 +106,6 @@ def auto(player=2,coeff=0):
     #print("")
     return ymax,xmax
 
-
 def score_calc(coeff,player=2):
     '''calculate total score'''
     nums = np.zeros((2,len(coeffs[0][0])))
@@ -186,8 +184,6 @@ def score_calc(coeff,player=2):
     nums[:,6] -= nums[:,15] + nums[:,16]
     nums[:,7] -= nums[:,17]
     
-    #global numsall
-    #numsall = nums
     if player==2: 
         return np.sum(nums*coeff), np.sum(nums*np.flip(coeff,axis=0))
     else:
@@ -200,7 +196,7 @@ def button(event):
             if mode == 0:
                 move(round(event.ydata),round(event.xdata))
             elif mode == 1:
-                if not step % 2: y,x = auto(1,1); move(y,x) # auto(1-B 2-W, 0-Old 1-Newï¼?                else: move(round(event.ydata),round(event.xdata))    
+                if not step % 2: y,x = auto(1,1); move(y,x) # auto(1-B 2-W, 0-Old 1-New)   
             elif mode == 2:
                 if not step % 2: move(round(event.ydata),round(event.xdata))
                 else: y,x = auto(2); move(y,x)   
