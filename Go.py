@@ -3,6 +3,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
+import sys
+sys.setrecursionlimit(1500)
 
 MapL = 19           # 棋盘大小
 step = 0            # 步数，为偶数时黑方落子
@@ -34,13 +36,13 @@ def CalcScore(board,y=3,x=3):
             component = np.where(components==i+1)
             qi = CalcQi(component, board)          # 气
             count = len(component[0])              # 棋子数
-            score += (1.1-2*n)*qi
+            score += (1.1-2.1*n)*qi
             if count > 6 and qi < 2 and not n: 
                 score -= 1000
-            if qi < 3: score += (2*n-1) * (2.5-qi) * (2+count/2)
-        score += (2*n-1) * (np.max(components)*2.2)# - np.sum(board==player)/2)
+            if qi < 3: score += (2*n-1) * (3-qi) * (1+count/2)
+        score += (2*n-1) * (np.max(components)*2.2 - np.sum(board==player)*1.1)
  
-    score += (6-np.min(np.abs([y-3,y-MapL+3,x-3,x-MapL+3])))/50   
+    score += (6-np.min(np.abs([y-3.5,y-MapL+3.5,x-3.5,x-MapL+3.5])))/50   
     return score
 
 def auto(player=2):
