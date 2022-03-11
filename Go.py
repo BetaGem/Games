@@ -39,10 +39,17 @@ def CalcScore(board,y=3,x=3):
             score += (1.1-2.1*n)*qi
             if count > 6 and qi < 2 and not n: 
                 score -= 1000
-            if qi < 3: score += (2*n-1) * (3-qi) * (1+count/2)
-        score += (2*n-1) * (np.max(components)*2.2 - np.sum(board==player)*1.1)
- 
-    score += (6-np.min(np.abs([y-3.5,y-MapL+3.5,x-3.5,x-MapL+3.5])))/50   
+            if qi < 4: score += (2*n-1) * (3.5-qi) * (0.7+count/2)
+        score += (2*n-1) * (np.max(components)*2.2 - np.sum(board==player)*1.3)
+    count = -1 #[0,0]
+    for i in range(-2,3):
+        for j in range(-2,3):
+            try: 
+                if board[y+i][x+j] == 1+step%2: count += 1 #; print("yes!")
+                elif board[y+i][x+j] == 2-step%2: count -= 1
+            except: pass
+    score -= abs(count)*3 #################
+    score += 0.05/(min(abs(y-3.3),abs(y-MapL+3.3))+min(abs(x-3.3),abs(x-MapL+3.3)))/(1+step/20) 
     return score
 
 def auto(player=2):
@@ -68,7 +75,7 @@ def auto(player=2):
                     temp[i][j] = 0
                     temp[ko[2]-1][ko[1]-1] = 2 - step%2
                     score = -9999
-                else: score = CalcScore(temp,i+1,j+1) + np.random.rand()
+                else: score = CalcScore(temp,i+1,j+1) + np.random.rand()*0.1
                 # print('%5.1d' % score,end='')
                 if max_score < score:    
                     max_score = score; ymax = i+1; xmax = j+1; tizimax = tizis
