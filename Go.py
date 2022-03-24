@@ -3,6 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from numba import jit
+from scipy.ndimage import label as CCL
 import sys
 sys.setrecursionlimit(1500)
 
@@ -31,7 +32,7 @@ def CalcScore(board,y=3,x=3):
         board_0 = board.copy()
         board_0[board_0 != player] = 0
         board_0[board_0 > 0] = 1
-        components = CCL(board_0)
+        components = CCL(board_0)[0]
         for i in range(int(np.max(components))):
             component = np.where(components==i+1)
             qi = CalcQi(component, board)          # 气
@@ -39,17 +40,18 @@ def CalcScore(board,y=3,x=3):
             score += (1.1-2.1*n)*qi
             if count > 6 and qi < 2 and not n: 
                 score -= 1000
-            if qi < 4: score += (2*n-1) * (3.5-qi) * (0.7+count/2)
-        score += (2*n-1) * (np.max(components)*2.2 - np.sum(board==player)*1.3)
-    count = -1 #[0,0]
-    for i in range(-2,3):
-        for j in range(-2,3):
-            try: 
-                if board[y+i][x+j] == 1+step%2: count += 1 #; print("yes!")
-                elif board[y+i][x+j] == 2-step%2: count -= 1
-            except: pass
-    score -= abs(count)*3 #################
-    score += 0.05/(min(abs(y-3.3),abs(y-MapL+3.3))+min(abs(x-3.3),abs(x-MapL+3.3)))/(1+step/20) 
+            if qi < 4: score += (2*n-1) * (3.2-qi) * (0.7+count/(3+n*10)-n*0.3)
+        score += (2*n-1) * (np.max(components)*2.1 - np.sum(board==player)*1.3)
+    neighbor1 = board[max(y-2,0):min(y+1,MapL-1),max(x-2,0):min(x+1,MapL-1)]
+    count = -1 + np.sum(neighbor1==1+step%2) - np.sum(neighbor1==2-step%2)
+    score -= 0.01*abs(count)
+    if abs(count) > 3: score -= 1
+    if abs(count) > 5: score -= 500
+    neighbor2 = board[max(y-3,0):min(y+2,MapL-1),max(x-3,0):min(x+2,MapL-1)]
+    count = -1 + np.sum(neighbor2==1+step%2) - np.sum(neighbor2==2-step%2)
+    score -= 0.02*abs(count)/(1+step/50)
+    if abs(count) > 6: score -= 500
+    score += 0.05/(min(abs(y-3.3),abs(y-MapL+3.3))+min(abs(x-3.3),abs(x-MapL+3.3)))/(1+step/40) 
     return score
 
 def auto(player=2):
@@ -75,7 +77,7 @@ def auto(player=2):
                     temp[i][j] = 0
                     temp[ko[2]-1][ko[1]-1] = 2 - step%2
                     score = -9999
-                else: score = CalcScore(temp,i+1,j+1) + np.random.rand()*0.1
+                else: score = CalcScore(temp,i+1,j+1) + np.random.rand()*0.01
                 # print('%5.1d' % score,end='')
                 if max_score < score:    
                     max_score = score; ymax = i+1; xmax = j+1; tizimax = tizis
@@ -134,13 +136,13 @@ def move(y,x):
             if not tizis[1] and tizis[0]:
                 board[i][j] = 0
                 print("无气。不能在此落子。")
-                #raise Exception("ERROR:0")
+                raise Exception("0")
             # 判断是否劫争
             elif ko[0] and abs(x-ko[1]) + abs(y-ko[2]) == 1:
                 board[i][j] = 0
                 board[ko[2]-1][ko[1]-1] = 2 - step%2
                 print("劫争。不能在此落子。")
-                #raise Exception("ERROR:1")
+                raise Exception("1")
             if tizis[0] == 1 and tizis[1] == 1:
                 ko = [1,x,y]
             else: ko = [0,-1,-1]
@@ -153,29 +155,6 @@ def move(y,x):
             if mode & (step % 2 + 1): button(1)       
     except: pass
     
-# 参考 https://www.cnblogs.com/walter-xh/p/10171597.html
-def CCL(board):
-    '''连通区域检测，用于提子'''
-    mask = 1    
-    label_table=np.zeros((MapL,MapL),dtype=np.int64)
-    def dfs(i, j, mask):  
-        if i<0 or i>=MapL or j<0 or j>=MapL or label_table[i][j]!=0 or board[i][j]!=1:
-            return 0
-        label_table[i][j] = mask
-        ret = 1
-        # 向四个方向搜索递归
-        ret+=dfs(i, j-1, mask)
-        ret+=dfs(i, j+1, mask)
-        ret+=dfs(i-1, j, mask)
-        ret+=dfs(i+1, j, mask)
-        return ret
-    for i in range(MapL):
-        for j in range(MapL):
-            if board[i][j] == 1 and label_table[i][j] == 0:
-                ret = dfs(i,j, mask)
-                mask += 1
-    return label_table
-
 @jit
 def CalcQi(component, board):
     '''计算一块棋的气'''
@@ -183,6 +162,8 @@ def CalcQi(component, board):
     zeros = np.where(board == 0)   
     for n in range(len(zeros[0])):
         i,j = zeros[0][n], zeros[1][n]
+        if i < np.min(component[0])-1 or i > np.max(component[0])+1: continue
+        if j < np.min(component[1])-1 or j > np.max(component[1])+1: continue
         exit_flag = 0
         for offset in [[0, -1], [-1, 0], [1, 0], [0, 1]]:
             i2, j2 = i + offset[0], j + offset[1]
@@ -190,6 +171,7 @@ def CalcQi(component, board):
                 for m in range(len(component[0])):
                     if i2 == component[0][m] and component[1][m] == j2:
                         qi += 1
+                        if (min(i,j)==0 or max(i,j)==MapL) and (min(i2,j2)==0 or max(i2,j2)==MapL): qi += 0.2
                         exit_flag = True
                         break
             if exit_flag: break                
@@ -204,7 +186,7 @@ def tizi(board):
         board_1 = board_0.copy()
         board_1[board_1 != player] = 0
         board_1[board_1 > 0] = 1
-        components = CCL(board_1)
+        components = CCL(board_1)[0]
         for i in range(int(np.max(components))):
             component = np.where(components==i+1)
             if CalcQi(component, board) == 0: 
