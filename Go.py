@@ -17,10 +17,20 @@ board = np.zeros((MapL,MapL),dtype=np.int16) # 生成棋盘
 resolution = 768    # 默认棋盘大小
 
 def GetArea(board):
-    '''计算黑棋和白棋占领的面积'''
+    '''计算黑棋和白棋占领的面积''' 
+    # 清理棋盘
+    for player in [1+step%2, 2-step%2]: 
+        board_0 = board == player
+        components = CCL(board_0)[0]
+        for i in range(int(np.max(components))):
+            component = np.where(components==i+1)
+            qi = CalcQi(component, board)
+            print(qi)
+            if qi < 2: board[component] = 0
+            
     area = [np.sum(board == 1),np.sum(board == 2)]
     chess = np.where(board != 0)
-    zeros = np.where(board == 0)
+    zeros = np.where(board == 0) 
     for i in range(len(zeros[0])):
         index = np.argmin(np.abs(chess[0]-zeros[0][i])+np.abs(chess[1]-zeros[1][i]))
         area[board[chess[0][index]][chess[1][index]]-1] += 1
@@ -29,29 +39,33 @@ def GetArea(board):
 def CalcScore(board,y=3,x=3):
     score = 0
     for n, player in enumerate([1+step%2, 2-step%2]): # n=0:mine,n=1:oppo 
-        board_0 = board.copy()
-        board_0[board_0 != player] = 0
-        board_0[board_0 > 0] = 1
+        board_0 = board==player
         components = CCL(board_0)[0]
         for i in range(int(np.max(components))):
             component = np.where(components==i+1)
             qi = CalcQi(component, board)          # 气
             count = len(component[0])              # 棋子数
-            score += (1.1-2.1*n)*qi
+            score += (1.07-2.11*n)*qi
             if count > 6 and qi < 2 and not n: 
                 score -= 1000
-            if qi < 4: score += (2*n-1) * (3.2-qi) * (0.7+count/(3+n*10)-n*0.3)
-        score += (2*n-1) * (np.max(components)*2.1 - np.sum(board==player)*1.3)
-    neighbor1 = board[max(y-2,0):min(y+1,MapL-1),max(x-2,0):min(x+1,MapL-1)]
-    count = -1 + np.sum(neighbor1==1+step%2) - np.sum(neighbor1==2-step%2)
-    score -= 0.01*abs(count)
-    if abs(count) > 3: score -= 1
-    if abs(count) > 5: score -= 500
-    neighbor2 = board[max(y-3,0):min(y+2,MapL-1),max(x-3,0):min(x+2,MapL-1)]
-    count = -1 + np.sum(neighbor2==1+step%2) - np.sum(neighbor2==2-step%2)
-    score -= 0.02*abs(count)/(1+step/50)
-    if abs(count) > 6: score -= 500
-    score += 0.05/(min(abs(y-3.3),abs(y-MapL+3.3))+min(abs(x-3.3),abs(x-MapL+3.3)))/(1+step/40) 
+            if qi < 4: score += (2*n-1) * (3.2-qi) * (0.3+count/(3+n*10)-n*0.1)
+        temp = 1.2 if step < 330 else 5
+        score += (2*n-1) * (np.max(components)*2.1 - np.sum(board==player)*temp)
+    
+    neighbor8 = board[max(y-2,0):min(y+1,MapL-1),max(x-2,0):min(x+1,MapL-1)]
+    count = -1 + np.sum(neighbor8==1+step%2) - np.sum(neighbor8==2-step%2)
+    score -= 0.02*abs(count)
+    if abs(count) > 2: score -= abs(count)
+    if abs(count) > 6:
+        if [board[y-2][x-1],board[y][x-1],board[y-1][x],board[y-1][x-2]] == [1+step%2]*4:
+            score -= abs(count)*100
+
+    neighbor24 = board[max(y-3,0):min(y+2,MapL-1),max(x-3,0):min(x+2,MapL-1)]
+    count = -1 + np.sum(neighbor24==1+step%2) - np.sum(neighbor24==2-step%2)
+    score -= 0.01*abs(count)/(1+step/100)
+    if abs(count) > 6: score -= abs(count)*20
+    score += 0.05/(min(abs(y-3.4),abs(y-MapL+3.4))+min(abs(x-3.4),abs(x-MapL+3.4)))/(1+step/40) 
+    if (x==1 or x==MapL or y==1 or y==MapL): score += 0.04 - abs(step - 200)/6000
     return score
 
 def auto(player=2):
@@ -61,7 +75,7 @@ def auto(player=2):
     max_score = -np.inf
     tizimax = [0,0]
     ymax = 1; xmax = 1
-    # print("")
+    print("")
     score_start = CalcScore(board)
     for i in range(MapL):
         for j in range(MapL):
@@ -77,13 +91,13 @@ def auto(player=2):
                     temp[i][j] = 0
                     temp[ko[2]-1][ko[1]-1] = 2 - step%2
                     score = -9999
-                else: score = CalcScore(temp,i+1,j+1) + np.random.rand()*0.01
-                # print('%5.1d' % score,end='')
+                else: score = CalcScore(temp,i+1,j+1) + np.random.rand()*0.002
+                print('%4.1f' % score,end='')
                 if max_score < score:    
                     max_score = score; ymax = i+1; xmax = j+1; tizimax = tizis
-            else: pass
-                # print('  ['+'%s'%chr(21*board[i][j]+45)+']',end='')
-        # print("")
+            else:
+                print('   '+chr(-9*board[i][j]+88),end='')
+        print("")
     if tizimax == [1, 1]: ko = [1,xmax,ymax]
     else: ko = [0,-1,-1]
     if max_score - score_start < -500: 
@@ -183,9 +197,7 @@ def tizi(board):
     tizi_nums = [0,0]
     board_0 = board.copy()
     for n, player in enumerate([1+step%2, 2-step%2]):
-        board_1 = board_0.copy()
-        board_1[board_1 != player] = 0
-        board_1[board_1 > 0] = 1
+        board_1 = board_0 == player
         components = CCL(board_1)[0]
         for i in range(int(np.max(components))):
             component = np.where(components==i+1)
