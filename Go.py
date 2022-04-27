@@ -16,8 +16,27 @@ mode = -1           # 模式: 0:双人, 1:我方执白, 2:我方执黑, 3:电脑
 board = np.zeros((MapL,MapL),dtype=np.int16) # 生成棋盘
 resolution = 768    # 默认棋盘大小
 
+def button(event):
+    '''选择游戏模式、启动控制'''
+    # print("button",end=' ')
+    if end_flag < 2:
+        #try:
+        if mode == 0:
+            move(round(event.ydata),round(event.xdata))
+        elif mode == 1:
+            if not step % 2: y,x = auto(1); move(y,x) # auto(1-Black 2-White）
+            else: board = move(round(event.ydata),round(event.xdata))    
+        elif mode == 2:
+            if not step % 2: move(round(event.ydata),round(event.xdata))
+            else: y,x = auto(2); move(y,x)   
+        elif mode == 3:
+            if not step % 2: y,x = auto(1); move(y,x)
+            else: y,x = auto(2); move(y,x)
+        #except: pass
+
 def GetArea(board):
     '''计算黑棋和白棋占领的面积''' 
+    board = board.copy()
     # 清理棋盘
     for player in [1+step%2, 2-step%2]: 
         board_0 = board == player
@@ -25,15 +44,15 @@ def GetArea(board):
         for i in range(int(np.max(components))):
             component = np.where(components==i+1)
             qi = CalcQi(component, board)
-            print(qi)
             if qi < 2: board[component] = 0
-            
+
     area = [np.sum(board == 1),np.sum(board == 2)]
     chess = np.where(board != 0)
-    zeros = np.where(board == 0) 
+    zeros = np.where(board == 0)
     for i in range(len(zeros[0])):
         index = np.argmin(np.abs(chess[0]-zeros[0][i])+np.abs(chess[1]-zeros[1][i]))
         area[board[chess[0][index]][chess[1][index]]-1] += 1
+    area[0] -= 6.5
     return area
 
 def CalcScore(board,y=3,x=3):
@@ -46,42 +65,51 @@ def CalcScore(board,y=3,x=3):
             qi = CalcQi(component, board)          # 气
             count = len(component[0])              # 棋子数
             score += (1.07-2.11*n)*qi
-            if count > 6 and qi < 2 and not n: 
-                score -= 1000
-            if qi < 4: score += (2*n-1) * (3.2-qi) * (0.3+count/(3+n*10)-n*0.1)
-        temp = 1.2 if step < 330 else 5
-        score += (2*n-1) * (np.max(components)*2.1 - np.sum(board==player)*temp)
+            if count > 6 and qi < 2 and not n: score -= 1000
+            if qi < 4: score += (2*n-1) * (3.38-1.1*qi) * (0.3+count/(3+n*5))
+        score += (2*n-1) * (np.max(components)*2.11 - np.sum(board==player)*1.24)
     
-    neighbor8 = board[max(y-2,0):min(y+1,MapL-1),max(x-2,0):min(x+1,MapL-1)]
-    count = -1 + np.sum(neighbor8==1+step%2) - np.sum(neighbor8==2-step%2)
-    score -= 0.02*abs(count)
-    if abs(count) > 2: score -= abs(count)
-    if abs(count) > 6:
-        if [board[y-2][x-1],board[y][x-1],board[y-1][x],board[y-1][x-2]] == [1+step%2]*4:
-            score -= abs(count)*100
+    neighbor8 = board[max(y-2,0):min(y+1,MapL),max(x-2,0):min(x+1,MapL)]
+    coeff = 8/len(neighbor8)/len(neighbor8[0])
+    mine, oppo = (-1 + np.sum(neighbor8==1+step%2))*coeff, np.sum(neighbor8==2-step%2)*coeff
+    count = abs((mine - oppo)*8/len(neighbor8)/len(neighbor8[0]))
+    score -= 0.02*count
+    if count > 1: score -= count**1.5/5
+    if mine > 5 and oppo == 0: score -= mine/3
 
-    neighbor24 = board[max(y-3,0):min(y+2,MapL-1),max(x-3,0):min(x+2,MapL-1)]
-    count = -1 + np.sum(neighbor24==1+step%2) - np.sum(neighbor24==2-step%2)
-    score -= 0.01*abs(count)/(1+step/100)
-    if abs(count) > 6: score -= abs(count)*20
-    score += 0.05/(min(abs(y-3.4),abs(y-MapL+3.4))+min(abs(x-3.4),abs(x-MapL+3.4)))/(1+step/40) 
-    if (x==1 or x==MapL or y==1 or y==MapL): score += 0.04 - abs(step - 200)/6000
+    neighbor24 = board[max(y-3,0):min(y+2,MapL),max(x-3,0):min(x+2,MapL)]
+    coeff = 24/len(neighbor24)/len(neighbor24[0])
+    mine, oppo = (-1 + np.sum(neighbor24==1+step%2))*coeff, np.sum(neighbor24==2-step%2)*coeff
+    count = abs((mine - oppo))
+    if count > 1 or np.random.rand()>0.2: score -= 0.01 * count/(1+step/60)
+    if mine > 2*oppo+3: score -= mine/3
+    if count > 7: score -= count
+    
+    corner = 0.02*MapL + 3.12
+    score += 0.02/(min(abs(y-corner),abs(y-MapL-1+corner))+min(abs(x-corner),abs(x-MapL-1+corner)))/(1+step/200) 
+    if (x==1 or x==MapL or y==1 or y==MapL):
+        try:
+            if (x==1 and (board[y-2][1]==board[y][1]==1+step%2 and board[y-1][1]==2-step%2)) or\
+(x==MapL and (board[y-2][x-2]==board[y][x-2]==1+step%2 and board[y-1][x-2]==2-step%2)) or\
+(y==1    and (board[1][x-2] == board[1][x] == 1+step%2 and board[1][x-1] == 2-step%2)) or\
+(y==MapL and (board[y-2][x-2]==board[y-2][x]==1+step%2 and board[y-2][x-1]==2-step%2)):
+                score += 1.6
+        except:score += 0.02
     return score
 
-def auto(player=2):
+def auto(player=2,test=False):
     '''电脑计算下一步棋的最佳位置'''
     # print("auto",end=' ')
     global ko
     max_score = -np.inf
     tizimax = [0,0]
     ymax = 1; xmax = 1
-    print("")
+    if test: print("")
     score_start = CalcScore(board)
     for i in range(MapL):
         for j in range(MapL):
             if not board[i][j]:               
                 temp = board.copy()
-                # for r in range(np.random.randint(4)): np.rot90(temp)
                 temp[i][j] = player
                 tizis = tizi(temp)
                 if not tizis[1] and tizis[0]:
@@ -91,48 +119,30 @@ def auto(player=2):
                     temp[i][j] = 0
                     temp[ko[2]-1][ko[1]-1] = 2 - step%2
                     score = -9999
-                else: score = CalcScore(temp,i+1,j+1) + np.random.rand()*0.002
-                print('%4.1f' % score,end='')
+                else: score = CalcScore(temp,i+1,j+1) + np.random.rand()*0.003
+                
+                if test: print('%5.1d' % (score*100-340),end='')
                 if max_score < score:    
                     max_score = score; ymax = i+1; xmax = j+1; tizimax = tizis
             else:
-                print('   '+chr(-9*board[i][j]+88),end='')
-        print("")
+                if test: print('   '+chr(-9*board[i][j]+88),end=' ')
+        if test: print("")
     if tizimax == [1, 1]: ko = [1,xmax,ymax]
     else: ko = [0,-1,-1]
-    if max_score - score_start < -500: 
+    if max_score - score_start < -500 or max_score < -1500: 
         space(1)
         return -32,-32
     # print("max_score:",int(max_score),"(x,y):",xmax,ymax)
     return ymax, xmax
-         
-def button(event):
-    '''选择游戏模式、启动控制'''
-    # print("button",end=' ')
-    if end_flag < 2:
-        try:
-            if mode == 0:
-                move(round(event.ydata),round(event.xdata))
-            elif mode == 1:
-                if not step % 2: y,x = auto(1); move(y,x) # auto(1-Black 2-White）
-                else: board = move(round(event.ydata),round(event.xdata))    
-            elif mode == 2:
-                if not step % 2: move(round(event.ydata),round(event.xdata))
-                else: y,x = auto(2); move(y,x)   
-            elif mode == 3:
-                if not step % 2: y,x = auto(1); move(y,x)
-                else: y,x = auto(2); move(y,x)
-        except: pass
             
 def space(event):
     '''按空格键虚着，按Q退出程序'''
     # print("space",end=' ')
     global step, end_flag
     if event == 1 or event.key == " ":
-        print("白" if step%2 else "黑","方虚着")
+        print("第",step,"步，","白方虚着" if step%2 else "黑方虚着")
         step += 1
         end_flag += 1        # 1次虚着准备
-        print("end_flag:",end_flag)
         steps.append([-32,-32])
         show()
         if mode & (step % 2 + 1): button(1)
@@ -179,13 +189,14 @@ def CalcQi(component, board):
         if i < np.min(component[0])-1 or i > np.max(component[0])+1: continue
         if j < np.min(component[1])-1 or j > np.max(component[1])+1: continue
         exit_flag = 0
-        for offset in [[0, -1], [-1, 0], [1, 0], [0, 1]]:
+        for offset in [[0, -1], [1, 0], [-1, 0], [0, 1]]:
             i2, j2 = i + offset[0], j + offset[1]
             if 0 <= i2 < MapL and 0 <= j2 < MapL:
                 for m in range(len(component[0])):
                     if i2 == component[0][m] and component[1][m] == j2:
                         qi += 1
-                        if (min(i,j)==0 or max(i,j)==MapL) and (min(i2,j2)==0 or max(i2,j2)==MapL): qi += 0.2
+                        if (min(i,j)==0 or max(i,j)==MapL-1) and (min(i2,j2)==0 or max(i2,j2)==MapL-1):
+                            qi += 0.2
                         exit_flag = True
                         break
             if exit_flag: break                
