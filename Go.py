@@ -7,7 +7,7 @@ from scipy.ndimage import label as CCL
 import sys
 sys.setrecursionlimit(1500)
 
-MapL = 19           # 棋盘大小
+MapL = 15           # 棋盘大小
 step = 0            # 步数，为偶数时黑方落子
 steps = []          # 每一步的坐标
 ko = [0,-1,-1]      # 打劫标志 [flag,x,y]
@@ -15,6 +15,9 @@ end_flag = 0        # 游戏结束标志 1:虚着一次 2:黑胜 3: 白胜
 mode = -1           # 模式: 0:双人, 1:我方执白, 2:我方执黑, 3:电脑-电脑
 board = np.zeros((MapL,MapL),dtype=np.int16) # 生成棋盘
 resolution = 768    # 默认棋盘大小
+test = True         # 调试模式
+
+if test: score_board = np.zeros((MapL,MapL))
 
 def button(event):
     '''选择游戏模式、启动控制'''
@@ -66,12 +69,12 @@ def CalcScore(board,y=3,x=3):
             count = len(component[0])              # 棋子数
             score += (1.07-2.11*n)*qi
             if count > 6 and qi < 2 and not n: score -= 1000
-            if qi < 4: score += (2*n-1) * (3.38-1.1*qi) * (0.3+count/(3+n*5))
-        score += (2*n-1) * (np.max(components)*2.11 - np.sum(board==player)*1.24)
+            if qi < 4: score += (2*n-1) * (3.4-1.1*qi) * (0.5+count/(5+n*8))
+        score += (2*n-1) * (np.max(components)*2.11 - np.sum(board==player)*1.25)
     
     neighbor8 = board[max(y-2,0):min(y+1,MapL),max(x-2,0):min(x+1,MapL)]
     coeff = 8/len(neighbor8)/len(neighbor8[0])
-    mine, oppo = (-1 + np.sum(neighbor8==1+step%2))*coeff, np.sum(neighbor8==2-step%2)*coeff
+    mine, oppo = (-0.98 + np.sum(neighbor8==1+step%2))*coeff, np.sum(neighbor8==2-step%2)*coeff
     count = abs((mine - oppo)*8/len(neighbor8)/len(neighbor8[0]))
     score -= 0.02*count
     if count > 1: score -= count**1.5/5
@@ -86,26 +89,27 @@ def CalcScore(board,y=3,x=3):
     if count > 7: score -= count
     
     corner = 0.02*MapL + 3.12
-    score += 0.02/(min(abs(y-corner),abs(y-MapL-1+corner))+min(abs(x-corner),abs(x-MapL-1+corner)))/(1+step/200) 
+    score += 0.03/(min(abs(y-corner),abs(y-MapL-1+corner))+min(abs(x-corner),abs(x-MapL-1+corner)))/(1+step/200)
+    if min(x,y)==1 or max(x,y)==MapL: score+=0.01*(1+step/100)
     if (x==1 or x==MapL or y==1 or y==MapL):
         try:
-            if (x==1 and (board[y-2][1]==board[y][1]==1+step%2 and board[y-1][1]==2-step%2)) or\
-(x==MapL and (board[y-2][x-2]==board[y][x-2]==1+step%2 and board[y-1][x-2]==2-step%2)) or\
-(y==1    and (board[1][x-2] == board[1][x] == 1+step%2 and board[1][x-1] == 2-step%2)) or\
-(y==MapL and (board[y-2][x-2]==board[y-2][x]==1+step%2 and board[y-2][x-1]==2-step%2)):
-                score += 1.6
+            if (x<=2 and (board[y-2][x]==board[y][x]==1+step%2 and board[y-1][x]==2-step%2)) or\
+(x>=MapL-1 and (board[y-2][x-2]==board[y][x-2]==1+step%2 and board[y-1][x-2]==2-step%2)) or\
+(y<=2    and (board[y][x-2] == board[y][x] == 1+step%2 and board[y][x-1] == 2-step%2)) or\
+(y>=MapL-1 and (board[y-2][x-2]==board[y-2][x]==1+step%2 and board[y-2][x-1]==2-step%2)):
+                score += 1.5
         except:score += 0.02
     return score
 
-def auto(player=2,test=False):
+def auto(player=2,test=test):
     '''电脑计算下一步棋的最佳位置'''
     # print("auto",end=' ')
-    global ko
+    global ko, score_board
     max_score = -np.inf
     tizimax = [0,0]
     ymax = 1; xmax = 1
-    if test: print("")
     score_start = CalcScore(board)
+    if test: score_board = np.zeros((MapL,MapL))
     for i in range(MapL):
         for j in range(MapL):
             if not board[i][j]:               
@@ -119,14 +123,12 @@ def auto(player=2,test=False):
                     temp[i][j] = 0
                     temp[ko[2]-1][ko[1]-1] = 2 - step%2
                     score = -9999
-                else: score = CalcScore(temp,i+1,j+1) + np.random.rand()*0.003
-                
-                if test: print('%5.1d' % (score*100-340),end='')
+                else: score = CalcScore(temp,i+1,j+1) + np.random.rand()*0.002*(1-test)
+                if test: score_board[i][j] = score
                 if max_score < score:    
                     max_score = score; ymax = i+1; xmax = j+1; tizimax = tizis
             else:
-                if test: print('   '+chr(-9*board[i][j]+88),end=' ')
-        if test: print("")
+                if test: score_board[i][j] = -88888
     if tizimax == [1, 1]: ko = [1,xmax,ymax]
     else: ko = [0,-1,-1]
     if max_score - score_start < -500 or max_score < -1500: 
@@ -196,7 +198,7 @@ def CalcQi(component, board):
                     if i2 == component[0][m] and component[1][m] == j2:
                         qi += 1
                         if (min(i,j)==0 or max(i,j)==MapL-1) and (min(i2,j2)==0 or max(i2,j2)==MapL-1):
-                            qi += 0.2
+                            qi += 0.15
                         exit_flag = True
                         break
             if exit_flag: break                
@@ -240,10 +242,18 @@ def show():
                             linewidths=1,edgecolors='k',zorder=32)
     if step:
         plt.scatter(steps[-1][1],steps[-1][0],s=int(resolution/10),c='r',lw=5,marker='+',zorder=64)
-    plt.scatter([4,4,4,10,10,10,16,16,16],[4,10,16,4,10,16,4,10,16],c='k',s=int(resolution/60),zorder=2)
+    if MapL==19: plt.scatter([4,4,4,10,10,10,16,16,16],[4,10,16,4,10,16,4,10,16],
+                c='k',s=int(resolution/60),zorder=2)
+    else: plt.scatter([4,4,MapL-3,MapL-3],[4,MapL-3,4,MapL-3],
+                c='k',s=int(resolution/60),zorder=2)
     plt.plot([1,1,MapL,MapL,1],[1,MapL,MapL,1,1],c='k',lw=1.5)
-    plt.fill([1,MapL,MapL,1],[1,1,MapL,MapL],c='tan',alpha=1,zorder=0)
-    plt.fill([-1,MapL+1,MapL+1,-1],[-1,-1,1+MapL,1+MapL],c='tan',alpha=0.4,zorder=1)
+    if not test:
+        plt.fill([1,MapL,MapL,1],[1,1,MapL,MapL],c='tan',alpha=1,zorder=0)
+        plt.fill([-1,MapL+1,MapL+1,-1],[-1,-1,1+MapL,1+MapL],c='tan',alpha=0.4,zorder=1)
+    else:
+        plt.imshow(score_board,extent=(0.5,MapL+0.5,MapL+0.5,0.5),cmap="jet",alpha=0.5,
+                   vmin=np.percentile(score_board[np.where(score_board!=-88888)],70))
+        
     plt.grid(True,c='k',zorder=1)
     plt.text(MapL/2+0.5,MapL+1.5,"Step:"+str(step)+"  Black:"+names[mode & 1]+"  White:"+names[(mode&2)//2],
              fontsize=15,horizontalalignment="center")
@@ -289,6 +299,12 @@ if __name__ == "__main__":
     while mode not in [0, 1, 2, 3, 4]:
         mode = int(input("选择模式（0:双人模式，1:我方执白, 2:我方执黑, 3:电脑-电脑，Q:退出）\n请输入："))
     print("加载中……")
-    while end_flag < 2:
-        show()
-        if mode & (step % 2 + 1): button(1)
+    while 1:
+        while end_flag < 2:
+            show()
+            if mode & (step % 2 + 1): button(1)
+        step = 0
+        steps = []
+        ko = [0,-1,-1]
+        end_flag = 0
+        board = np.zeros((MapL,MapL),dtype=np.int16)
