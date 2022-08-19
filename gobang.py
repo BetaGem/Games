@@ -282,7 +282,7 @@ def init():
     def choice(event):
         global mode
         mode = 4 - round(event.ydata)
-        if mode in [0,1,2,3]: plt.close(0)
+        if mode in [0,1,2,3] and 2.3 < event.xdata < 7.7: plt.close(0)
     fig = plt.figure(num=0)
     mngr = plt.get_current_fig_manager()
     mngr.window.setGeometry(100,100,600,600)
@@ -290,12 +290,14 @@ def init():
     
     plt.xlim(0,10); plt.ylim(0,10)
     plt.xticks([]); plt.yticks([])
-    plt.text(5,8,"Gobang",fontsize=20,va="center",ha="center")
-    plt.text(5,6,"Click the chessboard to play.\n After each game, close the chessboard\n to start a new game.",fontsize=14,va="center",ha="center")
-    plt.text(5,4,'player vs player',fontsize=15,bbox=dict(boxstyle="square",fc=(0.8, 0.8, 0.8)),va="center",ha="center")
-    plt.text(5,2,'player vs PC',    fontsize=15,bbox=dict(boxstyle="square",fc=(0.8, 0.8, 0.8)),va="center",ha="center")
-    plt.text(5,3,'PC vs player',    fontsize=15,bbox=dict(boxstyle="square",fc=(0.8, 0.8, 0.8)),va="center",ha="center")
-    plt.text(5,1,'PC vs PC',        fontsize=15,bbox=dict(boxstyle="square",fc=(0.8, 0.8, 0.8)),va="center",ha="center")
+    plt.text(5,8,"  Gobang  ",fontsize=25,color="w",bbox=(dict(fc="k",alpha=0.5)), va="center",ha="center")
+    plt.text(5,5.7,"Click the chessboard to play.\n Close the chessboard to refresh\n or start a new game.",fontsize=13,va="center",ha="center")
+    plt.text(5,4,'● player vs ○ player',fontsize=15,bbox=dict(fc=(1, 0.85, 0.7)),va="center",ha="center")
+    plt.text(5,2,'● player vs ○ PC      ', fontsize=15,bbox=dict(fc=(1, 0.85, 0.7)),va="center",ha="center")
+    plt.text(5,3,'● PC       vs ○ player', fontsize=15,bbox=dict(fc=(1, 0.85, 0.7)),va="center",ha="center")
+    plt.text(5,1,'● PC       vs ○ PC      ', fontsize=15,bbox=dict(fc=(1, 0.85, 0.7)),va="center",ha="center")
+    img = plt.imread("go.jpg")
+    plt.imshow(img,extent=[0,10,5,10])
     plt.show()
     if mode == 4: exit()
 
