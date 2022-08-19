@@ -1,3 +1,4 @@
+# coding=utf-8
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -6,7 +7,7 @@ WinN = 5     # "Five"-in-a-row
 step = 0     # Steps taken
 steps = []   # Coordinates of each step
 end_flag = 0 # Game end flag
-board = np.zeros((MapL,MapL),dtype=np.int16) # chessboard
+board = np.zeros((MapL,MapL),dtype=np.int64) # chessboard
 
 mode = 4     # modes: 0:player-player, 1:PC-player, 2:player-PC, 3:PC-PC
 
@@ -14,8 +15,9 @@ mode = 4     # modes: 0:player-player, 1:PC-player, 2:player-PC, 3:PC-PC
 coeffs = [np.array([[-12, 0,-35,-15,-34,-25,-1000,-45,-1000,-30,-30,-1000,-9500,-9500,-9500,-9500,-9500,-9500,-9500,-90000],
                     [ 10, 3, 30, 15, 29, 12,  190, 55, 180,  20, 20, 4000,  140,  135,  130, 130,  200,  135,  135, 90000]]),
           
-          np.array([[-12, 0,-35,-15,-34,-25,-1000,-40,-1000,-30,-30,-1000,-9500,-9500,-9500,-9500,-9500,-9500,-9500,-30000],
-                    [ 10, 3, 30, 15, 29, 12,  190, 50, 180,  20, 20, 4000,  140,  135,  130, 130,  200,  135,  135, 40000]])]
+          np.array([[-15, 0,-35,-15,-34,-25,-1000,-40,-1000,-30,-30,-1000,-9500,-9500,-9500,-9500,-9500,-9500,-9500,-30000],
+                    [ 10,10, 30, 15, 29, 12,  195, 50, 180,  20, 20, 4000,  140,  135,  130, 130,  200,  135,  135, 40000]])]
+#numsall = np.zeros((2,len(coeffs[0][0])))
 
 def judge(l,c,winn):
     '''judge if a player wins by taking a move (l,c)'''
@@ -65,17 +67,16 @@ def judge(l,c,winn):
 
 def auto(player=2,coeff=0):
     '''computer's move'''
-    global numsall
     max_score = -np.inf
     ymax = 1; xmax = 1
-    # Calculate the score at each point
+    # Calculate the scores at each point
     for y in range(MapL):
         for x in range(MapL):
             if not board[y][x]:
                 cd = abs(y-MapL/2+0.5) + abs(x-MapL/2+0.5)
                 if (not step and cd>3) or (step and not np.any(board[max(y-2,0):min(y+3,MapL),max(x-2,0):min(x+3,MapL)])):
                     score = -np.inf
-                    # print("     ",end='')
+                    #print("     ",end='')
                 else:
                     board[y][x] = player
                     scores = score_calc(coeffs[coeff],player)
@@ -92,13 +93,13 @@ def auto(player=2,coeff=0):
                         score -= coeffs[coeff][0][6]*0.5
                     elif 0.5<score2/coeffs[coeff][0][19]<3.5:
                         score -= coeffs[coeff][0][12]
-                    # print('%5d' % score,end='')
+                    #print('%5d' % score,end='')
                     if max_score < score:
                         max_score = score; ymax = y+1; xmax = x+1
                     board[y][x] = 0
             else: pass
-                # print('  ['+'%s'%chr(21*board[y][x]+45)+']',end='')
-        # print("")
+                #print('  ['+'%s'%chr(21*board[y][x]+45)+']',end='')
+        #print("")
     #print("B:",end='')
     #for j in range(len(numsall[0])): print('%2d'%int(numsall[0][j]),end=' ')
     #print("\nW:",end='')
@@ -108,7 +109,7 @@ def auto(player=2,coeff=0):
 
 def score_calc(coeff,player=2):
     '''calculate total score'''
-    nums = np.zeros((2,len(coeffs[0][0])))
+    nums = np.zeros((2,len(coeffs[0][0])))  
     def one_calc(a):
         '''calculate each list'''
         l = len(a)
@@ -184,6 +185,8 @@ def score_calc(coeff,player=2):
     nums[:,6] -= nums[:,15] + nums[:,16]
     nums[:,7] -= nums[:,17]
     
+    #global numsall
+    #numsall = nums
     if player==2: 
         return np.sum(nums*coeff), np.sum(nums*np.flip(coeff,axis=0))
     else:
@@ -196,16 +199,14 @@ def button(event):
             if mode == 0:
                 move(round(event.ydata),round(event.xdata))
             elif mode == 1:
-                if not step % 2: y,x = auto(1,1); move(y,x) # auto(1-B 2-W, 0-Old 1-New)  
-                else: move(round(event.ydata),round(event.xdata))
+                if not step % 2: y,x = auto(1,1); move(y,x) # auto(1-B 2-W, 0-Old 1-New)
+                else: move(round(event.ydata),round(event.xdata))    
             elif mode == 2:
                 if not step % 2: move(round(event.ydata),round(event.xdata))
                 else: y,x = auto(2); move(y,x)   
             elif mode == 3:
-                if not step % 2: 
-                    y,x = auto(1); move(y,x)
-                else: 
-                    y,x = auto(2,1); move(y,x)
+                if not step % 2: y,x = auto(1); move(y,x)
+                else: y,x = auto(2,1); move(y,x)
         except: pass
     
 def move(i,j):
@@ -223,17 +224,17 @@ def move(i,j):
 
 def show():
     '''show the chessboard'''
+    global step,board
     colors = ['w','k','w']
     names = ['player','PC']
     adsize = 0 if mode == 3 else step % 2
-    
-    if not end_flag: plt.clf()
+        
+    plt.clf()
     fig = plt.figure(num=1)
     mngr = plt.get_current_fig_manager()
-    mngr.window.setGeometry(0+adsize,30,700+adsize,700) # position of figures
+    mngr.window.setGeometry(0+adsize,30,701+adsize,701) # position and size of the window
     fig.canvas.mpl_connect('button_press_event', button)
-    plt.xlim(0.5,MapL+0.5)
-    plt.ylim(0.5,MapL+0.5)
+    plt.xlim(0.5,MapL+0.5); plt.ylim(0.5,MapL+0.5)
     for i in range(MapL):
         for j in range(MapL):
             if board[i][j]:
@@ -242,12 +243,19 @@ def show():
                             linewidths=1,edgecolors='k',zorder=128)
     if step:
         plt.scatter(steps[-1][1],steps[-1][0],s=100,c='r',lw=5,marker='+',zorder=256)
+    if MapL==15: 
+        plt.scatter([4,4,8,12,12],[4,12,8,4,12], c='k',s=10,zorder=2)
+    else: 
+        plt.scatter([4,4,MapL-3,MapL-3],[4,MapL-3,4,MapL-3], c='k',s=10,zorder=2)
+        
     plt.plot([1,1,MapL,MapL,1],[1,MapL,MapL,1,1],c='k',lw=1)
     plt.fill([1,MapL,MapL,1],[1,1,MapL,MapL],c='tan',alpha=0.5,zorder=0)
     plt.fill([-MapL,2*MapL,2*MapL,-MapL],[-MapL,-MapL,2*MapL,2*MapL],c='tan',alpha=0.4,zorder=1)
+
     plt.grid(True,ls='--',c='k',zorder=1)
-    plt.text(MapL/2,MapL+1.5,"Step:"+str(step)+"  Black:"+names[mode & 1]+"  "+str(result[0])+":"+str(result[1])+"  White:"+names[(mode&2)//2],
-             fontsize=15,horizontalalignment="center")
+    plt.text(MapL/2,MapL+1.5,
+             "Step:"+str(step)+"  Black:"+names[mode & 1]+"  "+str(result[0])+":"+str(result[1])+"  White:"+names[(mode&2)//2],
+             fontsize=15,ha="center")
     ax = plt.gca()
     ax.set_xticks(range(1,MapL+1))
     ax.set_yticks(range(1,MapL+1)) 
@@ -258,9 +266,7 @@ def show():
             string = "Draw!"
         else: 
             string = "Black Wins" if step%2 else "White Wins"
-        plt.text(MapL/2+0.5,MapL+0.5,string,fontsize=20,c='r',
-                 verticalalignment="center",
-                 horizontalalignment="center")
+        plt.text(MapL/2+0.5,MapL+0.5,string,fontsize=20,c='r',va="center",ha="center")
     
     if mode & (step % 2 + 1): 
         if not step: plt.pause(0.01)
@@ -270,15 +276,32 @@ def show():
         button(1)
     else:  
         plt.show()
-                     
+
+def init():
+    '''Initialization interface'''
+    def choice(event):
+        global mode
+        mode = 4 - round(event.ydata)
+        if mode in [0,1,2,3]: plt.close(0)
+    fig = plt.figure(num=0)
+    mngr = plt.get_current_fig_manager()
+    mngr.window.setGeometry(100,100,600,600)
+    fig.canvas.mpl_connect('button_press_event', choice)
+    
+    plt.xlim(0,10); plt.ylim(0,10)
+    plt.xticks([]); plt.yticks([])
+    plt.text(5,8,"Gobang",fontsize=20,va="center",ha="center")
+    plt.text(5,6,"Click the chessboard to play.\n After each game, close the chessboard\n to start a new game.",fontsize=14,va="center",ha="center")
+    plt.text(5,4,'player vs player',fontsize=15,bbox=dict(boxstyle="square",fc=(0.8, 0.8, 0.8)),va="center",ha="center")
+    plt.text(5,2,'player vs PC',    fontsize=15,bbox=dict(boxstyle="square",fc=(0.8, 0.8, 0.8)),va="center",ha="center")
+    plt.text(5,3,'PC vs player',    fontsize=15,bbox=dict(boxstyle="square",fc=(0.8, 0.8, 0.8)),va="center",ha="center")
+    plt.text(5,1,'PC vs PC',        fontsize=15,bbox=dict(boxstyle="square",fc=(0.8, 0.8, 0.8)),va="center",ha="center")
+    plt.show()
+    if mode == 4: exit()
+
 if __name__ == "__main__":
     result = [0,0]
-    print('#'*8+"\n Gobang\n"+'#'*8+"\nDescription: click the chessboard to play. After each game, close the chessboard to start a new game.\n")
-    while mode not in [0,1,2,3]:
-        try:
-            mode = int(input("Choose a mode (0:player-player, 1:PC-player, 2:player-PC, 3:PC-PC)\nInput:"))
-        except: pass
-    print("loading ...")
+    init()
     while 1:
         show()
         if end_flag:
