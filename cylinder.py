@@ -12,7 +12,7 @@ for n,r in enumerate([.4,.7]):
     
     H = 2            # 点光源到液面的高度
     Nz = 200         # 竖向微元数量
-    Nxy = 1200        # 角向微元数量
+    Nxy = 1200       # 角向微元数量
     
     # 设置面元
     Z = np.array([])
@@ -41,8 +41,8 @@ for n,r in enumerate([.4,.7]):
         y = ((h - 1) * np.sin(phi) - r * np.sin(2*phi)) / h
         # 入射角和折射角
         i1 = np.arccos((1 + r * np.cos(phi)) / np.sqrt(1 + r**2 + (H-z)**2 + 2*r*np.cos(phi)))
-        i2 = np.arcsin(np.sin(i1) / 1.5) # 取玻璃折射率为1.5
-        # 考虑面源对光源的张角、反射率随入射角的变化（菲涅尔反射公式）
+        i2 = np.arcsin(np.sin(i1) / 1.5) # 取玻璃折射率为 1.5
+        # 考虑面元面积、反射率随入射角的变化（菲涅尔反射公式）
         flux = 1 / abs(((2*r**2 - h + 1 + r*(3-h) * np.cos(phi)) / z**2 / h**3))
         flux *= ((np.tan(i1-i2)/np.tan(i1+i2))**2 + (np.sin(i1-i2)/np.sin(i1+i2))**2) 
         
@@ -51,7 +51,6 @@ for n,r in enumerate([.4,.7]):
     # 画图
     plt.subplot(1,2,n+1)
     plt.imshow(np.cbrt(Base), cmap="pink")
-    #plt.colorbar()
     plt.clim(0,8)
     plt.xticks([]);plt.yticks([])
     plt.text(100,1800,"$r=${:.1f}".format(r),c="w")
