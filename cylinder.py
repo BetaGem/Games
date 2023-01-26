@@ -44,7 +44,7 @@ for n,r in enumerate([.4,.7]):
         i2 = np.arcsin(np.sin(i1) / 1.5) # 玻璃折射率取为 1.5
         
         # 考虑面元面积、反射率随入射角的变化（忽略常系数）
-        # 计算微元（dz, d\theta）在像平面上反射光斑的大小，取倒数
+        # 计算微元（dz d\phi）在像平面上反射光斑的大小，取倒数
         flux = 1 / abs(((2*r**2 - h + 1 + r*(3-h) * np.cos(phi)) / z**2 / h**3))
         # 菲涅尔反射公式
         flux *= (np.tan(i1-i2)/np.tan(i1+i2))**2 + (np.sin(i1-i2)/np.sin(i1+i2))**2
