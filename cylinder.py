@@ -11,7 +11,7 @@ plt.subplots_adjust(hspace=0,wspace=0)
 for n,r in enumerate([.4,.7]):
     
     H = 2            # 点光源到液面的高度
-    Nz = 200         # 竖向微元数量
+    Nz = 400         # 竖向微元数量
     Nxy = 1200       # 角向微元数量
     
     # 设置面元
@@ -29,7 +29,7 @@ for n,r in enumerate([.4,.7]):
     Cylinder["y"] = np.sin(Cylinder["phi"])
     
     # 初始化像平面
-    pixel = 2e-3
+    pixel = 5e-3
     Base = np.zeros((int(4/pixel), int(4/pixel)))
     
     # 对每一个面元，求反射点位置与反射强度
@@ -45,7 +45,7 @@ for n,r in enumerate([.4,.7]):
         
         # 考虑面元面积、反射率随入射角的变化（忽略常系数）
         # 计算微元（dz d\phi）在像平面上反射光斑的大小，取倒数
-        flux = 1 / abs(((2*r**2 - h + 1 + r*(3-h) * np.cos(phi)) / z**2 / h**3))
+        flux = np.cos(i1) / abs(((2*r**2 - h + 1 + r*(3-h) * np.cos(phi)) / z**2 / h**3))
         # 菲涅尔反射公式
         flux *= (np.tan(i1-i2)/np.tan(i1+i2))**2 + (np.sin(i1-i2)/np.sin(i1+i2))**2
         
@@ -53,7 +53,7 @@ for n,r in enumerate([.4,.7]):
     
     # 画图
     plt.subplot(1,2,n+1)
-    plt.imshow(np.cbrt(Base), cmap="pink")
+    plt.imshow(np.cbrt(Base))
     plt.clim(0,8)
     plt.xticks([]);plt.yticks([])
     plt.text(100,1800,"$r=${:.1f}".format(r),c="w")
