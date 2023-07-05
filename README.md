@@ -1,6 +1,6 @@
 # Games: something fun
-## gobang.py: 五子棋 双人/人机对战
-## Go.py: 围棋 双人/人机对战(~业余15级)
+## gobang.py: 五子棋 双人/人机对战（有点难度）
+## Go.py: 围棋 双人/人机对战 (业余15级水平)
 
 依赖包：``numpy`` ``matplotlib`` ``scipy`` ``numba``  
 
