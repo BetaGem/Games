@@ -13,3 +13,9 @@
 
 ### cylinder.py
 Simulate light from a point source reflected by the inner surface of a cylinder.
+
+### geo_game.zip
+城市经纬度填空游戏，说明：https://www.zhihu.com/pin/1998851689164329895
+
+### astro_game.zip
+天文小游戏（TBD）
